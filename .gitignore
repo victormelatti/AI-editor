@@ -1,0 +1,21 @@
+node_modules/
+.env
+.DS_Store
+.git
+*.docx
+*.yml
+*.ipynb
+dejavu-sans/
+DejaVuSans.ttf
+docs/
+faiss_index/
+figure/
+tables/
+~$*
+*.tmp
+AI editor questions.docx
+AI_agent_environment.yml
+AI_editor_testing_concepts.ipynb
+tables for editors.ipynb
+~$ editor questions.docx
+~WRL3170.tmp
