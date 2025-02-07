@@ -1,2 +1,2 @@
-# AI_editor
-AI agent to assist edotors with data queries
+# AI editor
+AI agent to assist editors with data queries
