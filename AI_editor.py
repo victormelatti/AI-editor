@@ -86,8 +86,8 @@ print("Usable tables/views:", db.get_usable_table_names())
 # Initialize the language model and toolkit
 llm = ChatOpenAI(model="gpt-4o-2024-08-06") #gpt-4-turbo")
 fine_tuened_llm = ChatOpenAI(model="'ft:gpt-4o-2024-08-06:times-higher-education::AzNdE2kH'")
-#toolkit = SQLDatabaseToolkit(db=db, llm=llm)
 
+# replace the llm with the fine-tuned one
 # Set the SQLDatabaseChain to return SQL queries only withouth running the query
 sql_chain = SQLDatabaseChain.from_llm(llm, db, return_sql=True, verbose=True) 
 
