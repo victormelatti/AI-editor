@@ -79,18 +79,17 @@ metadata.reflect(bind=engine, views=True)  # Ensure views are included
 print(" Check that the tables that the LLM can access are the only ones I specified in custom_table_info", [f"{table}: {table in list(metadata.tables.keys())}" for table in custom_table_info.keys()])
 
 
-
 db = SQLDatabase(engine, view_support=True, include_tables=["rnk_wur_2025_latest_vw", "rnk_wur_all_years_latest_vw"], custom_table_info=custom_table_info )
 print("Usable tables/views:", db.get_usable_table_names())
 
 # Initialize the language model and toolkit
-llm = ChatOpenAI(model="gpt-4o-2024-08-06") #gpt-4-turbo")
-fine_tuened_llm = ChatOpenAI(model="ft:gpt-4o-2024-08-06:times-higher-education::AzNdE2kH")
+general_llm = "gpt-4-turbo"
+fine_tuened_llm = "ft:gpt-4o-2024-08-06:times-higher-education::AzNdE2kH"
 
-fine_tuened_llm.invoke("What is the capital of France?")
+# fine_tuened_llm.invoke("What is the capital of France?")
 # replace the llm with the fine-tuned one
 # Set the SQLDatabaseChain to return SQL queries only withouth running the query
-sql_chain = SQLDatabaseChain.from_llm(fine_tuened_llm, db, return_sql=True, verbose=True) 
+sql_chain = SQLDatabaseChain.from_llm(ChatOpenAI(model=general_llm), db, return_sql=True, verbose=True) 
 
 
 def create_SQL_query(metric: 'id', time_range: [2023, 2025], countries: ['United Kingdom', 'China'], chart_type: 'line', aggregation: 'count'):
@@ -211,7 +210,8 @@ extract_parameters_from_query = {
                         - the metric of interest 'metric',
                         - a time period 'time_range' as a list of two years [start_year, end_year],
                         - a list of countries 'countries',
-                        - what type of chart to generate 'chart_type' if the user has specified that a visualization is required,
+                        - if the user wants a visualization - 'require_visualization',
+                        - what type of chart to generate 'chart_type' if the user has specified that a visualization is required (require_visualization=True),
                         - deduce what type of aggregation to apply ('aggregation') to generate a working SQL query that would answer the user query.
                         """
                 ),
@@ -234,6 +234,10 @@ extract_parameters_from_query = {
                             "items": {"type": "string"}, 
                             "description": "List of countries"
                         },
+                        "require_visualization": {
+                            "type": "boolean",
+                            "description": "Whether the user query requires a visualization (plot) or not."
+                        },
                         "chart_type": {
                             "type": "string",
                             "enum": ["line", "bar"],
@@ -245,7 +249,7 @@ extract_parameters_from_query = {
                             "description": "Aggregation operation to apply (e.g., average, count, maximum, minimum)."
                         }
                     },
-                   "required": ["time_range", "countries", "metric", "aggregation"]
+                   "required": ["time_range", "countries", "metric",]
                 }
             }
 
@@ -256,7 +260,7 @@ def function_calling_db(user_query):
     client = openai.OpenAI()
 
     response = client.chat.completions.create(
-        model = "gpt-4o", #fine_tuened_llm,  #"gpt-4o", #gpt-4-1106-preview",
+        model = fine_tuened_llm, #"gpt-4-turbo", #"gpt-4o", #general_llm, #fine_tuened_llm,  #"gpt-4o", #gpt-4-1106-preview",
         messages=[{"role": "user", "content": user_query}],
         functions = function_calling,
         function_call="auto"
@@ -345,37 +349,25 @@ Call_db_and_plotting_tool = Tool(
 agent_executor = initialize_agent(
     tools= [ pdf_retrieval, Call_db_and_plotting_tool, web_search],
     agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION, 
-    llm=llm, #fine_tuened_llm,
+    llm=general_llm, #fine_tuened_llm,
     verbose=True
 )
 
 # Query the agent with intelligent tool selection
 def query_openai_agent(user_query): 
            
-    # #selected_tool = select_tool_based_on_similarity(user_query)
-    # #print(selected_tool)
-    # if selected_tool:
-    #     tool_func = {
-    #         "Call_db_and_plotting_tool": Call_db_and_plotting_tool.name,
-    #         "web_search": web_search.name,
-    #         "pdf_retrieval": pdf_retrieval.name
-    #     }.get(selected_tool, None)
-    
-    # final_query = (f"Before taking any action, first look at the available tools then pick {tool_func} to answer the user query. "
-    #               "Then proceed with the required action using the selected tool." + user_query)
-    # print(f"using this tool: {tool_func}")
-    # print(f"Final query is : {final_query}")
     final_query = user_query
     response = agent_executor.run(final_query)
     
     return response
 
 
-query1 = "Plot in a line chart the average score number of universities ranked in United States, India and China from 2020 to 2025. use a line chart"
+query1 = "Plot in a line chart the average score number of universities ranked in United States and China from 2020 to 2025."
 response = query_openai_agent(query1)
 
 query2 = "I want to know the impact of brexit on the UK. use the knowledge from the pdfs you have do not use web search. The response should be 100 words long. Add numerical data that you find in your knoledge to support your answer."
 response = query_openai_agent(query2)
+
 # Example Usage
 formatted_response = format_text(response, words_per_line=30)
 print(formatted_response)
