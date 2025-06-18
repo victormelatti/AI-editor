@@ -46,7 +46,6 @@ from descriptions import custom_table_info, extract_parameters_from_query
 # importlib.reload(descriptions)
 
 ## Add the API keys
-os.environ['OPENAI_API_KEY'] = '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'
 os.environ["TAVILY_API_KEY"] = "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"
 
 ## Directories
