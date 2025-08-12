@@ -13,8 +13,6 @@ figure/
 tables/
 ~$*
 *.tmp
-AI editor questions.docx
-AI_agent_environment.yml
 AI_editor_testing_concepts.ipynb
 tables for editors.ipynb
 ~$ editor questions.docx
